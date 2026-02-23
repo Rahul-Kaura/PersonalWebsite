@@ -296,8 +296,7 @@
   var phishingState = { order: [], index: 0, correct: 0, total: 0 };
 
   function currentPhish() {
-    var idx = phishingState.order[phishingState.index];
-    return PHISHING_SCENARIOS[idx];
+    return phishingState.order[phishingState.index];
   }
 
   function showPhishScenario() {
@@ -375,8 +374,7 @@
   var cipherState = { order: [], index: 0, solved: 0, attempts: 0 };
 
   function currentCipher() {
-    var idx = cipherState.order[cipherState.index];
-    return CIPHER_CHALLENGES[idx];
+    return cipherState.order[cipherState.index];
   }
 
   function normaliseAnswer(str) {
