@@ -263,6 +263,11 @@
   }
 
   function wordQuestKeydown(e) {
+    var target = e.target;
+    var tag = target && target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || (target && target.isContentEditable)) {
+      return;
+    }
     if (!document.getElementById("word-quest-board") || !document.getElementById("word-quest-board").offsetParent) return;
     if (e.key === "Backspace" || e.key === "Enter" || (e.key.length === 1 && e.key >= "a" && e.key <= "z")) {
       e.preventDefault();
