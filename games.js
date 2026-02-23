@@ -373,7 +373,7 @@
     { cipher: "Lbh unir snxr rapbhagre nccyvpngvba.", plain: "you have fake encounter application.", hint: "Another ROT13 example.", type: "rot13" }
   ];
 
-  var cipherState = { order: [], index: 0, solved: 0, attempts: 0, revealedWords: 0 };
+  var cipherState = { order: [], index: 0, solved: 0, attempts: 0 };
 
   function currentCipher() {
     return cipherState.order[cipherState.index];
@@ -388,20 +388,21 @@
       cipherState.order = shuffleArray(CIPHER_CHALLENGES);
       cipherState.index = 0;
       cipherState.solved = 0;
-      cipherState.attempts = 0;
     }
-    cipherState.revealedWords = 0;
+    cipherState.attempts = 0;
     var challenge = currentCipher();
     var cipherEl = document.getElementById("cipher-ciphertext");
     var hintEl = document.getElementById("cipher-hint");
     var inputEl = document.getElementById("cipher-answer");
     var feedbackEl = document.getElementById("cipher-feedback");
     var scoreEl = document.getElementById("cipher-score");
+    var submitBtn = document.getElementById("cipher-submit");
     if (cipherEl) cipherEl.textContent = challenge.cipher;
     if (hintEl) hintEl.textContent = "Hint: " + challenge.hint;
-    if (inputEl) { inputEl.value = ""; inputEl.focus(); }
+    if (inputEl) { inputEl.value = ""; inputEl.disabled = false; inputEl.focus(); }
     if (feedbackEl) { feedbackEl.textContent = ""; feedbackEl.className = "game-message"; }
     if (scoreEl) scoreEl.textContent = "Solved: " + cipherState.solved + " · Attempts: " + cipherState.attempts;
+    if (submitBtn) submitBtn.disabled = false;
   }
 
   function handleCipherSubmit() {
@@ -409,7 +410,9 @@
     var inputEl = document.getElementById("cipher-answer");
     var feedbackEl = document.getElementById("cipher-feedback");
     var scoreEl = document.getElementById("cipher-score");
+    var submitBtn = document.getElementById("cipher-submit");
     if (!inputEl || !feedbackEl || !scoreEl) return;
+    if (inputEl.disabled) return;
     var guess = inputEl.value;
     if (!guess.trim()) {
       feedbackEl.textContent = "Type your decryption guess first.";
@@ -423,17 +426,16 @@
       cipherState.solved++;
       feedbackEl.textContent = "Nice work – you fully decrypted it!";
       feedbackEl.className = "game-message win";
-      cipherState.revealedWords = 0;
     } else {
-      var words = challenge.plain.split(/\s+/);
-      if (cipherState.revealedWords < words.length) {
-        cipherState.revealedWords++;
-        var partial = words.slice(0, cipherState.revealedWords).join(" ");
-        feedbackEl.textContent = "Not quite. First " + cipherState.revealedWords + " word(s): \"" + partial + "\"";
+      if (cipherState.attempts >= 5) {
+        feedbackEl.textContent = "The answer was: \"" + challenge.plain + "\". Go to Next Challenge.";
+        feedbackEl.className = "game-message lose";
+        inputEl.disabled = true;
+        if (submitBtn) submitBtn.disabled = true;
       } else {
-        feedbackEl.textContent = "Full answer: \"" + challenge.plain + "\" – compare and try again or go to the next challenge.";
+        feedbackEl.textContent = "Not quite. Compare patterns and punctuation, then try again.";
+        feedbackEl.className = "game-message lose";
       }
-      feedbackEl.className = "game-message lose";
     }
     scoreEl.textContent = "Solved: " + cipherState.solved + " · Attempts: " + cipherState.attempts;
   }
