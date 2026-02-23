@@ -1,0 +1,29 @@
+Deploy Homework 1 (personal website) on Render
+=============================================
+
+Option A – Deploy from GitHub (recommended)
+-------------------------------------------
+1. Put your site in a Git repo (e.g. only the homework1 folder contents, or a repo with homework1 as a subfolder).
+2. Go to https://render.com and sign in (or create an account).
+3. Click "New +" → "Static Site".
+4. Connect your GitHub account and select the repo.
+5. Settings:
+   - Name: e.g. rahul-kaura-personal
+   - Branch: main (or your default)
+   - Root Directory: leave blank if the repo root is your site (index.html at top level). If your repo is "csen161" and the site is in homework1, set Root Directory to: homework1
+   - Build Command: leave empty (static site)
+   - Publish Directory: . (or leave default)
+6. Click "Create Static Site". Render will deploy and give you a URL like https://your-site-name.onrender.com
+
+Option B – Deploy without Git (manual upload)
+---------------------------------------------
+Render does not support drag-and-drop for static sites; you must use a repo. Easiest:
+1. Create a new GitHub repo (e.g. "personal-site").
+2. Copy the contents of the homework1 folder into the repo (so index.html, styles.css, etc. are at the repo root).
+3. Push to GitHub, then follow Option A and use that repo. Set Root Directory to blank.
+
+After deploy
+------------
+- Your site will be at https://<your-site-name>.onrender.com
+- Free static sites may spin down after inactivity; the first visit after a while may be slower.
+- To use a custom domain: Dashboard → your static site → Settings → Custom Domains.

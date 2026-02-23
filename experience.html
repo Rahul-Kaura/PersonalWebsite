@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experience | Rahul Kaura</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- rocket flies to nav link -->
+  <div class="rocket-flyer" id="rocket-flyer" aria-hidden="true">
+    <span class="rocket"><span class="rocket-body"></span></span>
+  </div>
+  <div class="space-bg" aria-hidden="true">
+    <span class="rocket"><span class="rocket-body"></span></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+    <span class="meteor"></span>
+  </div>
+  <!-- top bar + nav -->
+  <header class="site-header">
+    <div class="wrap">
+      <p class="site-title"><a href="index.html">Rahul Kaura</a></p>
+      <nav class="site-nav">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="education.html">Education</a></li>
+          <li><a href="experience.html">Experience</a></li>
+          <li><a href="contact.html">Contact Me</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1 class="page-title">Experience</h1>
+    <section class="section">
+      <h2 class="section-title">Work Experience</h2>
+
+      <article class="card exp-item">
+        <h3>AI/ML Engineer</h3>
+        <p class="meta">Sequoia Capital · June 2025 – September 2025</p>
+        <ul>
+          <li>Developed an AI-driven risk scoring system to evaluate early-stage investments by quantifying product, market, and operational risks through multi-layered model architecture.</li>
+          <li>Built a modular simulation model representing Sequoia's organizational structure while integrating dynamic risk assessment pipelines for any product component.</li>
+          <li>Utilized Docker for scalable deployment; implemented an agentic framework using LangGraph, LangChain, and CrewAI for task-based reasoning, decision tracing, and report generation.</li>
+          <li>Integrated VictoriaLogs for monitoring and performance analytics; used Box API for secure data management.</li>
+        </ul>
+      </article>
+
+      <article class="card exp-item">
+        <h3>Ciocca Center Innovation Fellow</h3>
+        <p class="meta">Santa Clara University · September 2024 – June 2025</p>
+        <ul>
+          <li>Selected for a prestigious interdisciplinary program (20% acceptance rate); leveraged GPT-based NLP models for sentiment analysis on student perspectives regarding third spaces on campus.</li>
+          <li>Implemented data visualization using Seaborn; used scikit-learn classification models (Logistic Regression, Random Forest) for categorizing student belonging, sustainability initiatives, and service accessibility.</li>
+          <li>Collaborated with SCU faculty from Innovation and CS departments to prototype, test, and launch a campus-wide digital platform; 70% of students expressed support for a new communal space with a petition of 600+ signatures.</li>
+        </ul>
+      </article>
+
+      <article class="card exp-item">
+        <h3>Co-Founder and CTO</h3>
+        <p class="meta">RoomieConnectAI · August 2023 – Present</p>
+        <ul>
+          <li>Spearheaded design and implementation of a graph-based recommendation system powered by graph neural networks, integrating social media APIs (Facebook Graph API, LinkedIn API) for personalized roommate recommendations.</li>
+          <li>Scaled to 500+ users across 5+ colleges in six months; integrated fine-tuned LLaMA-2 with Azure OpenAI and graph database; led system architecture, model optimization, and data pipeline development.</li>
+          <li>Implemented trust-based graph networks and personalized matching using embeddings and clustering to connect users based on verified profiles, lifestyle preferences, and interests.</li>
+        </ul>
+      </article>
+    </section>
+
+    <!-- projects list -->
+    <section class="section">
+      <h2 class="section-title">Projects</h2>
+
+      <article class="card exp-item">
+        <h3>Vista AI (Chrome Extension)</h3>
+        <p class="meta">Founder · September 2024 – June 2025</p>
+        <ul>
+          <li>Engineered an AI-augmented dynamic wallpaper extension integrating multimodal LLMs, task orchestration agents, and diffusion-based visual generation pipelines.</li>
+          <li>Implemented real-time context inference with transformer encoders, GPU-optimized background synthesis with latent diffusion models, and asynchronous task scheduling via event-driven microservices.</li>
+          <li>Designed scalable RESTful APIs and local caching layers for on-device inference, prompt persistence, and cross-module communication.</li>
+        </ul>
+      </article>
+
+      <article class="card exp-item">
+        <h3>GPT Financial News</h3>
+        <p class="meta">Developer · July 2024 – November 2024</p>
+        <ul>
+          <li>Created an end-to-end LLM model with self-attention and transformer architecture for real-time financial news insights; leveraged matrix multiplications, vector spaces, eigenvalue decomposition, and SVD for dimensionality reduction.</li>
+        </ul>
+      </article>
+
+      <article class="card exp-item card-with-image">
+        <img src="featured-article.jpg" alt="The AI Takeover: Market Disruption and the Push for Global Standards" class="project-image">
+        <h3>The AI Takeover: Market Disruption and the Push for Global Standards</h3>
+        <p class="meta">Medium · Feb 2026</p>
+        <p>AI is reshaping global information markets and driving new regulation. I wrote about market disruption from AI search, the EU AI Act, and implications for enterprises.</p>
+        <p><a href="https://medium.com/@rahulkaura2004/the-ai-takeover-market-disruption-and-the-push-for-global-standards-065903227515" target="_blank" rel="noopener noreferrer" class="card-link">Read article on Medium →</a></p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Rahul Kaura · <a href="contact.html">Contact Me</a></p>
+  </footer>
+  <script>
+    (function () {
+      var flyer = document.getElementById("rocket-flyer");
+      var bgRocket = document.querySelector(".space-bg .rocket");
+      var navLinks = document.querySelectorAll(".site-nav a[href^='index.html'], .site-nav a[href^='education.html'], .site-nav a[href^='experience.html'], .site-nav a[href^='contact.html']");
+      var footerContact = document.querySelector(".site-footer a[href='contact.html']");
+      function handleClick(e, link) {
+        if (!link || !link.href || link.target === "_blank") return;
+        var href = link.getAttribute("href");
+        if (!href || href.indexOf("mailto:") === 0) return;
+        e.preventDefault();
+        if (!flyer || !bgRocket) return;
+        var rocketRect = bgRocket.getBoundingClientRect();
+        var linkRect = link.getBoundingClientRect();
+        var startX = rocketRect.left + rocketRect.width / 2;
+        var startY = rocketRect.top + rocketRect.height / 2;
+        var endX = linkRect.left + linkRect.width / 2;
+        var endY = linkRect.top + linkRect.height / 2;
+        flyer.style.left = startX + "px";
+        flyer.style.top = startY + "px";
+        flyer.classList.remove("explode");
+        flyer.classList.add("is-flying");
+        flyer.offsetHeight;
+        flyer.style.left = endX + "px";
+        flyer.style.top = endY + "px";
+        flyer.addEventListener("transitionend", function go() {
+          flyer.removeEventListener("transitionend", go);
+          flyer.classList.add("explode");
+          setTimeout(function () {
+            flyer.classList.remove("is-flying", "explode");
+            window.location.href = link.href;
+          }, 450);
+        }, { once: true });
+      }
+      navLinks.forEach(function (link) { link.addEventListener("click", function (e) { handleClick(e, link); }); });
+      if (footerContact) footerContact.addEventListener("click", function (e) { handleClick(e, footerContact); });
+    })();
+  </script>
+</body>
+</html>
