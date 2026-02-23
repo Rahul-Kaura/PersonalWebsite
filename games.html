@@ -41,7 +41,7 @@
 
   <main>
     <h1 class="page-title">Interactive Games</h1>
-    <p class="games-intro">Two games that showcase logic, security, and puzzle‑style thinking — a Wordle-style word game and a cryptographic password guessing challenge.</p>
+    <p class="games-intro">Three games that showcase logic, security awareness, and puzzle‑style thinking — a Wordle-style word game, a phishing spotter, and a cipher‑breaking lab.</p>
 
     <!-- Game 1: Word Quest (Wordle-style) -->
     <section class="section game-section">
@@ -55,15 +55,38 @@
       </div>
     </section>
 
-    <!-- Game 2: Rocket Fuel Run (snake-style rocket game) -->
+    <!-- Game 2: Phishing Shield (email / URL spotter) -->
     <section class="section game-section">
-      <h2 class="section-title">Rocket Fuel Run</h2>
-      <p class="game-desc">Steer the rocket through space, collect fuel cells, and grow your flame trail. Don’t crash into the walls or your own trail.</p>
+      <h2 class="section-title">Phishing Shield</h2>
+      <p class="game-desc">Read each email or URL and decide whether you would trust it. Great for practicing real‑world phishing detection.</p>
       <div class="card game-card">
-        <div id="rocket-board" class="rocket-board" aria-label="Rocket snake game grid"></div>
-        <div id="rocket-message" class="game-message" aria-live="polite"></div>
-        <div id="rocket-score" class="rocket-score"></div>
-        <button type="button" class="game-btn" id="rocket-start">Start / Restart</button>
+        <div id="phish-body" class="phish-body" aria-live="polite"></div>
+        <div id="phish-meta" class="phish-meta"></div>
+        <div class="phish-actions">
+          <button type="button" class="phish-btn" data-choice="safe">Looks Safe</button>
+          <button type="button" class="phish-btn phish-danger" data-choice="phishing">Looks Phishy</button>
+        </div>
+        <div id="phish-feedback" class="game-message"></div>
+        <div id="phish-score" class="phish-score"></div>
+        <button type="button" class="game-btn" id="phish-next">Next Scenario</button>
+      </div>
+    </section>
+
+    <!-- Game 3: Cipher Lab (simple cipher / decryption challenge) -->
+    <section class="section game-section">
+      <h2 class="section-title">Cipher Lab</h2>
+      <p class="game-desc">Break simple substitution ciphers, Caesar shifts, and leetspeak to reveal hidden messages — like a miniature capture‑the‑flag lab.</p>
+      <div class="card game-card">
+        <div id="cipher-ciphertext" class="cipher-text" aria-live="polite"></div>
+        <div id="cipher-hint" class="cipher-hint"></div>
+        <div class="cipher-input-row">
+          <label for="cipher-answer" class="cipher-label">Your decryption:</label>
+          <input type="text" id="cipher-answer" class="cipher-input" autocomplete="off" />
+        </div>
+        <div id="cipher-feedback" class="game-message"></div>
+        <div id="cipher-score" class="cipher-score"></div>
+        <button type="button" class="game-btn" id="cipher-submit">Check Answer</button>
+        <button type="button" class="game-btn cipher-next" id="cipher-next">Next Challenge</button>
       </div>
     </section>
   </main>

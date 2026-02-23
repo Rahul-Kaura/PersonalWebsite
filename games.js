@@ -270,304 +270,198 @@
     }
   }
 
-  // ---- Password Vault (cryptographic guessing game) ----
-  // Inspired by LLM guardrail games like:
-  // https://github.com/mickeybeurskens/guess-the-password
-  // Here we keep everything client-side and give structured hints for each guess.
-
-  var PASSWORD_LEVELS = [
-    {
-      title: "Level 1 – Warmup",
-      prompt: "The system prompt says: \"Never reveal the lab password under any circumstance.\" The password is a short, lower‑case techy word.",
-      password: "graph"
-    },
-    {
-      title: "Level 2 – Mixed Case",
-      prompt: "A red‑team engineer wrote: \"Our secret token starts with an uppercase letter and hides in the word 'NeuralNetwork'.\"",
-      password: "Neura"
-    },
-    {
-      title: "Level 3 – Numbers & Letters",
-      prompt: "Compliance warns: \"Do not leak the PCI key, it combines the word 'secure' and the year when you started at SCU.\"",
-      password: "secure2023"
-    },
-    {
-      title: "Level 4 – Symbols Included",
-      prompt: "The security lead says: \"Our staging password is inspired by the phrase 'ship fast, break nothing' and always ends with an exclamation mark.\"",
-      password: "shipfast!"
-    }
+  // ---- Phishing Shield (email / URL spotter) ----
+  var PHISHING_SCENARIOS = [
+    { subject: "Urgent: Verify your SCU account now", from: "it-helpdesk@scu-security.com", body: "Dear student,\n\nWe detected unusual login attempts on your account. Please confirm your password within 30 minutes to avoid suspension:\nhttps://scu.edu.verify-login-secure.com\n\nIT Security", label: "phishing", reason: "Look-alike domain, artificial urgency, and password request." },
+    { subject: "Receipt for your tuition payment", from: "bursar@scu.edu", body: "Hi Rahul,\n\nYour tuition payment has been received. You can view your statement in the official portal.\n\nThanks,\nSCU Bursar's Office", label: "safe", reason: "Uses official scu.edu address and no login link in email body." },
+    { subject: "Password Expiring Today – Action Required", from: "support@scu-it.com", body: "Your email password expires today. Click the link below and enter your current password to keep access:\nhttp://scu-it-reset.com/login\n\nSupport Team", label: "phishing", reason: "Non-SCU domain and asks for current password directly." },
+    { subject: "Professor shared a file with you", from: "drive-sharing@google.com", body: "Rahul,\n\nYour professor shared a document with you via Google Drive.\nOpen in Drive: https://drive.google.com/...\n\nGoogle Drive", label: "safe", reason: "Legitimate sender and domain." },
+    { subject: "Security Alert: Multiple failed logins", from: "no-reply@secure-scu-login.com", body: "We blocked several suspicious login attempts.\nImmediately log in here to secure your account:\nhttps://secure-scu-login.com\n\nSecurity Center", label: "phishing", reason: "Not an scu.edu domain and tries to create panic." },
+    { subject: "Free AirPods for SCU Students", from: "campus-giveaway@promooffers.io", body: "Congrats! You were randomly selected for a free AirPods giveaway. Just enter your credit card for shipping.\n\nClaim now: http://scu-free-airpods.io", label: "phishing", reason: "Too good to be true; asks for card data on unknown domain." },
+    { subject: "Career Center Appointment Reminder", from: "careercenter@scu.edu", body: "Hi Rahul,\n\nThis is a reminder of your appointment with the Career Center tomorrow at 3pm.\n\nIf you need to reschedule, log into the career portal as usual.", label: "safe", reason: "Consistent with expected campus communications." },
+    { subject: "Security Training Overdue", from: "security-training@scu.edu", body: "Hello,\n\nOur records show you still need to complete the annual security awareness training.\nPlease log in through the usual MySCU portal to finish it.\n\nThank you.", label: "safe", reason: "Uses official domain and points you to normal login path." },
+    { subject: "Action Needed: Scholarship Disbursement", from: "finance-officer@scu-scholarships.net", body: "Dear student,\n\nWe cannot release your scholarship funds until you confirm your bank credentials here:\nhttps://scholarships-scu-payments.net", label: "phishing", reason: "Non-SCU domain and direct request for bank credentials." },
+    { subject: "Unusual sign-in attempt blocked", from: "no-reply@accounts.google.com", body: "We blocked a sign-in attempt to your Google account.\nIf this was you, you can safely ignore this message.\n\nCheck activity: https://myaccount.google.com/device-activity", label: "safe", reason: "Legitimate domain and typical Google security wording." }
   ];
 
-  var passwordState = {
-    levelIndex: 0,
-    attempts: 0
-  };
-
-  function getCurrentLevel() {
-    return PASSWORD_LEVELS[passwordState.levelIndex] || PASSWORD_LEVELS[0];
+  function shuffleArray(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
   }
 
-  function analyzePasswordGuess(guess, secret) {
-    var g = guess || "";
-    var s = secret || "";
-    var lengthHint = "Your guess has " + g.length + " characters, password has " + s.length + ".";
+  var phishingState = { order: [], index: 0, correct: 0, total: 0 };
 
-    // Overlap: count distinct characters in common (case-sensitive)
-    var setGuess = {};
-    for (var i = 0; i < g.length; i++) setGuess[g[i]] = true;
-    var overlap = 0;
-    for (var j = 0; j < s.length; j++) {
-      if (setGuess[s[j]]) overlap++;
-    }
-
-    // Position matches
-    var positionMatches = 0;
-    var minLen = Math.min(g.length, s.length);
-    for (var k = 0; k < minLen; k++) {
-      if (g[k] === s[k]) positionMatches++;
-    }
-
-    return {
-      lengthHint: lengthHint,
-      overlapHint: "You used " + overlap + " character(s) that also appear in the password.",
-      positionHint: positionMatches + " character(s) are in the correct position."
-    };
+  function currentPhish() {
+    var idx = phishingState.order[phishingState.index];
+    return PHISHING_SCENARIOS[idx];
   }
 
-  function showPasswordLevel() {
-    var level = getCurrentLevel();
-    var titleEl = document.getElementById("password-level");
-    var promptEl = document.getElementById("password-prompt");
-    var inputEl = document.getElementById("password-input");
-    var feedbackEl = document.getElementById("password-feedback");
-    var statsEl = document.getElementById("password-stats");
-    var nextBtn = document.getElementById("password-next");
-    var restartBtn = document.getElementById("password-restart");
-
-    passwordState.attempts = 0;
-
-    if (titleEl) titleEl.textContent = level.title;
-    if (promptEl) promptEl.textContent = level.prompt;
-    if (inputEl) {
-      inputEl.value = "";
-      inputEl.focus();
+  function showPhishScenario() {
+    if (!phishingState.order.length) {
+      phishingState.order = shuffleArray(PHISHING_SCENARIOS);
+      phishingState.index = 0;
+      phishingState.correct = 0;
+      phishingState.total = 0;
     }
-    if (feedbackEl) {
-      feedbackEl.textContent = "";
-      feedbackEl.className = "game-message";
-    }
-    if (statsEl) statsEl.textContent = "Attempts: 0";
-    if (nextBtn) nextBtn.style.display = "none";
-    if (restartBtn) restartBtn.style.display = "none";
+    var scenario = currentPhish();
+    var bodyEl = document.getElementById("phish-body");
+    var metaEl = document.getElementById("phish-meta");
+    var feedbackEl = document.getElementById("phish-feedback");
+    var scoreEl = document.getElementById("phish-score");
+    if (bodyEl) bodyEl.textContent = scenario.body;
+    if (metaEl) metaEl.innerHTML = "<strong>From:</strong> " + scenario.from + "<br><strong>Subject:</strong> " + scenario.subject;
+    if (feedbackEl) { feedbackEl.textContent = ""; feedbackEl.className = "game-message"; }
+    if (scoreEl) scoreEl.textContent = "Score: " + phishingState.correct + " / " + phishingState.total + " decided";
   }
 
-  function handlePasswordGuess() {
-    var level = getCurrentLevel();
-    var inputEl = document.getElementById("password-input");
-    var feedbackEl = document.getElementById("password-feedback");
-    var statsEl = document.getElementById("password-stats");
-    var nextBtn = document.getElementById("password-next");
-    var restartBtn = document.getElementById("password-restart");
-    if (!inputEl || !feedbackEl || !statsEl) return;
+  function handlePhishChoice(choice) {
+    var scenario = currentPhish();
+    var feedbackEl = document.getElementById("phish-feedback");
+    var scoreEl = document.getElementById("phish-score");
+    phishingState.total++;
+    var isCorrect = (choice === scenario.label);
+    if (isCorrect) {
+      phishingState.correct++;
+      if (feedbackEl) { feedbackEl.textContent = "Correct – " + scenario.reason; feedbackEl.className = "game-message win"; }
+    } else if (feedbackEl) {
+      var expected = scenario.label === "phishing" ? "phishy" : "safe";
+      feedbackEl.textContent = "Not quite. This is considered " + expected + " because: " + scenario.reason;
+      feedbackEl.className = "game-message lose";
+    }
+    if (scoreEl) scoreEl.textContent = "Score: " + phishingState.correct + " / " + phishingState.total + " decided";
+  }
 
-    var guess = inputEl.value || "";
+  function nextPhish() {
+    phishingState.index++;
+    if (phishingState.index >= phishingState.order.length) {
+      phishingState.order = shuffleArray(PHISHING_SCENARIOS);
+      phishingState.index = 0;
+    }
+    showPhishScenario();
+  }
+
+  function initPhishingShield() {
+    if (!document.getElementById("phish-body")) return;
+    phishingState.order = shuffleArray(PHISHING_SCENARIOS);
+    phishingState.index = 0;
+    phishingState.correct = 0;
+    phishingState.total = 0;
+    showPhishScenario();
+    document.querySelectorAll(".phish-btn[data-choice]").forEach(function (btn) {
+      btn.addEventListener("click", function () { handlePhishChoice(btn.getAttribute("data-choice")); });
+    });
+    var nextBtn = document.getElementById("phish-next");
+    if (nextBtn) nextBtn.addEventListener("click", nextPhish);
+  }
+
+  // ---- Cipher Lab (decryption challenges) ----
+  var CIPHER_CHALLENGES = [
+    { cipher: "Khoor, Zruog!", plain: "hello, world!", hint: "Classic Caesar shift by +3.", type: "caesar" },
+    { cipher: "Uifsf jt op tqppo.", plain: "there is no spoon.", hint: "Every letter shifted +1.", type: "caesar" },
+    { cipher: "Gr zg rh uli gsv Uilnvmg?", plain: "to it is you the Student?", hint: "Atbash-style reversal of the alphabet.", type: "substitution" },
+    { cipher: "H3ll0, 57ud3n7!", plain: "hello, student!", hint: "Typical leetspeak (numbers for letters).", type: "leet" },
+    { cipher: "Pdeo eo k fobxkq ql elzzbp qeb ifkb.", plain: "this is a simple caesar over the text.", hint: "Caesar shift but not +1 or +3.", type: "caesar" },
+    { cipher: "ifmmp tfdsfu bhfou", plain: "hello secret agent", hint: "Each letter one ahead of its plain form.", type: "caesar" },
+    { cipher: "Sgd vzsdijnm hr qdzcq.", plain: "the watershed is ready.", hint: "Shift of -1 from encrypted back to plain.", type: "caesar" },
+    { cipher: "Vg'f abg gur frperg vs rirelbar pna ernq vg.", plain: "it's not the secret if everyone can read it.", hint: "ROT13: letters rotated by 13.", type: "rot13" },
+    { cipher: "Ymj vznhp gwtbs ktc ozrux tajw ymj qfed itl.", plain: "the quick brown fox jumps over the lazy dog.", hint: "Caesar with a shift of +5.", type: "caesar" },
+    { cipher: "Lbh unir snxr rapbhagre nccyvpngvba.", plain: "you have fake encounter application.", hint: "Another ROT13 example.", type: "rot13" }
+  ];
+
+  var cipherState = { order: [], index: 0, solved: 0, attempts: 0 };
+
+  function currentCipher() {
+    var idx = cipherState.order[cipherState.index];
+    return CIPHER_CHALLENGES[idx];
+  }
+
+  function normaliseAnswer(str) {
+    return (str || "").trim().toLowerCase();
+  }
+
+  function showCipherChallenge() {
+    if (!cipherState.order.length) {
+      cipherState.order = shuffleArray(CIPHER_CHALLENGES);
+      cipherState.index = 0;
+      cipherState.solved = 0;
+      cipherState.attempts = 0;
+    }
+    var challenge = currentCipher();
+    var cipherEl = document.getElementById("cipher-ciphertext");
+    var hintEl = document.getElementById("cipher-hint");
+    var inputEl = document.getElementById("cipher-answer");
+    var feedbackEl = document.getElementById("cipher-feedback");
+    var scoreEl = document.getElementById("cipher-score");
+    if (cipherEl) cipherEl.textContent = challenge.cipher;
+    if (hintEl) hintEl.textContent = "Hint: " + challenge.hint;
+    if (inputEl) { inputEl.value = ""; inputEl.focus(); }
+    if (feedbackEl) { feedbackEl.textContent = ""; feedbackEl.className = "game-message"; }
+    if (scoreEl) scoreEl.textContent = "Solved: " + cipherState.solved + " · Attempts: " + cipherState.attempts;
+  }
+
+  function handleCipherSubmit() {
+    var challenge = currentCipher();
+    var inputEl = document.getElementById("cipher-answer");
+    var feedbackEl = document.getElementById("cipher-feedback");
+    var scoreEl = document.getElementById("cipher-score");
+    if (!inputEl || !feedbackEl || !scoreEl) return;
+    var guess = inputEl.value;
     if (!guess.trim()) {
-      feedbackEl.textContent = "Enter a guess first.";
+      feedbackEl.textContent = "Type your decryption guess first.";
       feedbackEl.className = "game-message info";
       return;
     }
-
-    passwordState.attempts++;
-    statsEl.textContent = "Attempts: " + passwordState.attempts;
-
-    if (guess === level.password) {
-      feedbackEl.textContent = "Correct! You cracked the password in " + passwordState.attempts + " attempt(s).";
+    cipherState.attempts++;
+    var correctPlain = normaliseAnswer(challenge.plain);
+    var guessPlain = normaliseAnswer(guess);
+    if (guessPlain === correctPlain) {
+      cipherState.solved++;
+      feedbackEl.textContent = "Nice work – you fully decrypted it!";
       feedbackEl.className = "game-message win";
-      if (passwordState.levelIndex < PASSWORD_LEVELS.length - 1) {
-        if (nextBtn) nextBtn.style.display = "inline-block";
-      } else if (restartBtn) {
-        restartBtn.style.display = "inline-block";
-      }
-      return;
-    }
-
-    var hints = analyzePasswordGuess(guess, level.password);
-    feedbackEl.textContent = hints.lengthHint + " " + hints.overlapHint + " " + hints.positionHint;
-    feedbackEl.className = "game-message info";
-  }
-
-  function initPasswordGame() {
-    // Deprecated hook (Password Vault replaced by Rocket Fuel Run).
-  }
-
-  // ---- Rocket Fuel Run (snake-style rocket game) ----
-  var ROCKET_ROWS = 15;
-  var ROCKET_COLS = 15;
-  var ROCKET_TICK_MS = 230;
-
-  var rocketState = {
-    segments: [], // [{x,y}, ...] head first
-    dirX: 1,
-    dirY: 0,
-    fuel: null,
-    running: false,
-    tickId: null,
-    score: 0
-  };
-
-  function buildRocketBoard() {
-    var board = document.getElementById("rocket-board");
-    if (!board) return;
-    board.innerHTML = "";
-    for (var r = 0; r < ROCKET_ROWS; r++) {
-      for (var c = 0; c < ROCKET_COLS; c++) {
-        var cell = document.createElement("div");
-        cell.className = "rocket-cell";
-        cell.setAttribute("data-r", r);
-        cell.setAttribute("data-c", c);
-        board.appendChild(cell);
-      }
-    }
-  }
-
-  function rocketCell(r, c) {
-    var board = document.getElementById("rocket-board");
-    if (!board) return null;
-    return board.querySelector("[data-r=\"" + r + "\"][data-c=\"" + c + "\"]");
-  }
-
-  function placeFuel() {
-    var empty = [];
-    for (var r = 0; r < ROCKET_ROWS; r++) {
-      for (var c = 0; c < ROCKET_COLS; c++) {
-        var occupied = rocketState.segments.some(function (seg) { return seg.x === c && seg.y === r; });
-        if (!occupied) empty.push({ x: c, y: r });
-      }
-    }
-    if (!empty.length) return;
-    var choice = empty[Math.floor(Math.random() * empty.length)];
-    rocketState.fuel = choice;
-  }
-
-  function renderRocket() {
-    for (var r = 0; r < ROCKET_ROWS; r++) {
-      for (var c = 0; c < ROCKET_COLS; c++) {
-        var cell = rocketCell(r, c);
-        if (!cell) continue;
-        cell.classList.remove("rocket-head", "rocket-body", "fuel");
-      }
-    }
-    rocketState.segments.forEach(function (seg, idx) {
-      var cell = rocketCell(seg.y, seg.x);
-      if (!cell) return;
-      if (idx === 0) cell.classList.add("rocket-head");
-      else cell.classList.add("rocket-body");
-    });
-    if (rocketState.fuel) {
-      var f = rocketState.fuel;
-      var fCell = rocketCell(f.y, f.x);
-      if (fCell) fCell.classList.add("fuel");
-    }
-    var scoreEl = document.getElementById("rocket-score");
-    if (scoreEl) scoreEl.textContent = "Fuel collected: " + rocketState.score;
-  }
-
-  function resetRocket() {
-    rocketState.segments = [{ x: 7, y: 7 }];
-    rocketState.dirX = 1;
-    rocketState.dirY = 0;
-    rocketState.score = 0;
-    rocketState.running = false;
-    if (rocketState.tickId) {
-      clearInterval(rocketState.tickId);
-      rocketState.tickId = null;
-    }
-    placeFuel();
-    renderRocket();
-    var msg = document.getElementById("rocket-message");
-    if (msg) msg.textContent = "Press Start and use arrow keys to move.";
-  }
-
-  function stepRocket() {
-    if (!rocketState.running) return;
-    var head = rocketState.segments[0];
-    var nx = head.x + rocketState.dirX;
-    var ny = head.y + rocketState.dirY;
-
-    // Wall collision
-    if (nx < 0 || nx >= ROCKET_COLS || ny < 0 || ny >= ROCKET_ROWS) {
-      rocketGameOver("You hit the wall!");
-      return;
-    }
-    // Self collision
-    if (rocketState.segments.some(function (seg) { return seg.x === nx && seg.y === ny; })) {
-      rocketGameOver("You hit your own flame trail!");
-      return;
-    }
-
-    rocketState.segments.unshift({ x: nx, y: ny });
-    if (rocketState.fuel && nx === rocketState.fuel.x && ny === rocketState.fuel.y) {
-      rocketState.score++;
-      placeFuel();
     } else {
-      rocketState.segments.pop();
+      feedbackEl.textContent = "Not quite. Compare patterns and punctuation, then try again.";
+      feedbackEl.className = "game-message lose";
     }
-    renderRocket();
+    scoreEl.textContent = "Solved: " + cipherState.solved + " · Attempts: " + cipherState.attempts;
   }
 
-  function rocketGameOver(reason) {
-    rocketState.running = false;
-    if (rocketState.tickId) {
-      clearInterval(rocketState.tickId);
-      rocketState.tickId = null;
+  function nextCipher() {
+    cipherState.index++;
+    if (cipherState.index >= cipherState.order.length) {
+      cipherState.order = shuffleArray(CIPHER_CHALLENGES);
+      cipherState.index = 0;
     }
-    var msg = document.getElementById("rocket-message");
-    if (msg) msg.textContent = reason + " Press Start to try again.";
+    showCipherChallenge();
   }
 
-  function initRocketGame() {
-    var board = document.getElementById("rocket-board");
-    if (!board) return;
-    buildRocketBoard();
-    resetRocket();
-
-    var startBtn = document.getElementById("rocket-start");
-    if (startBtn) {
-      startBtn.onclick = function () {
-        resetRocket();
-        rocketState.running = true;
-        rocketState.tickId = setInterval(stepRocket, ROCKET_TICK_MS);
-      };
-    }
-
-    document.addEventListener("keydown", function (e) {
-      if (!rocketState.running) return;
-      if (e.key === "ArrowUp" && rocketState.dirY !== 1) {
-        rocketState.dirX = 0; rocketState.dirY = -1;
-      } else if (e.key === "ArrowDown" && rocketState.dirY !== -1) {
-        rocketState.dirX = 0; rocketState.dirY = 1;
-      } else if (e.key === "ArrowLeft" && rocketState.dirX !== 1) {
-        rocketState.dirX = -1; rocketState.dirY = 0;
-      } else if (e.key === "ArrowRight" && rocketState.dirX !== -1) {
-        rocketState.dirX = 1; rocketState.dirY = 0;
-      } else {
-        return;
-      }
-      e.preventDefault();
-    });
+  function initCipherLab() {
+    if (!document.getElementById("cipher-ciphertext")) return;
+    cipherState.order = shuffleArray(CIPHER_CHALLENGES);
+    cipherState.index = 0;
+    cipherState.solved = 0;
+    cipherState.attempts = 0;
+    showCipherChallenge();
+    var submitBtn = document.getElementById("cipher-submit");
+    var nextBtn = document.getElementById("cipher-next");
+    if (submitBtn) submitBtn.addEventListener("click", handleCipherSubmit);
+    if (nextBtn) nextBtn.addEventListener("click", nextCipher);
+    var answerInput = document.getElementById("cipher-answer");
+    if (answerInput) answerInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); handleCipherSubmit(); } });
   }
 
   function bootGames() {
     var hasWordQuest = !!document.getElementById("word-quest-board");
-    var hasRocket = !!document.getElementById("rocket-board");
+    var hasPhish = !!document.getElementById("phish-body");
+    var hasCipher = !!document.getElementById("cipher-ciphertext");
     if (hasWordQuest) {
-      loadWordList().finally(function () {
-        initWordQuest();
-      });
+      loadWordList().finally(function () { initWordQuest(); });
     }
-    if (hasRocket) {
-      initRocketGame();
-    }
+    if (hasPhish) initPhishingShield();
+    if (hasCipher) initCipherLab();
   }
 
   if (document.readyState === "loading") {
