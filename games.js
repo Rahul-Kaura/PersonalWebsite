@@ -403,7 +403,7 @@
   // ---- Rocket Fuel Run (snake-style rocket game) ----
   var ROCKET_ROWS = 15;
   var ROCKET_COLS = 15;
-  var ROCKET_TICK_MS = 150;
+  var ROCKET_TICK_MS = 230;
 
   var rocketState = {
     segments: [], // [{x,y}, ...] head first
