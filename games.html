@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Education | Rahul Kaura</title>
+  <title>Games | Rahul Kaura</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="games.css">
 </head>
 <body>
-  <!-- rocket flies to nav link -->
   <div class="rocket-flyer" id="rocket-flyer" aria-hidden="true">
     <span class="rocket"><span class="rocket-body"></span></span>
   </div>
-  <!-- space bg + rocket + meteors -->
   <div class="space-bg" aria-hidden="true">
     <span class="rocket"><span class="rocket-body"></span></span>
     <span class="meteor"></span>
@@ -25,7 +24,6 @@
     <span class="meteor"></span>
     <span class="meteor"></span>
   </div>
-  <!-- top bar + nav -->
   <header class="site-header">
     <div class="wrap">
       <p class="site-title"><a href="index.html">Rahul Kaura</a></p>
@@ -42,38 +40,35 @@
   </header>
 
   <main>
-    <h1 class="page-title">Education</h1>
-    <section class="section">
-      <h2 class="section-title">Degree</h2>
-      <ul class="edu-list">
-        <li>
-          <div class="card">
-            <h3>Santa Clara University</h3>
-            <p class="meta">Bachelor of Science, Computer Science and Engineering · August 2023 – May 2027</p>
-            <p>Relevant coursework: Data Structures, Operating Systems, Discrete Math, Database Systems, Electrical Circuits, Logic Design.</p>
-          </div>
-        </li>
-      </ul>
+    <h1 class="page-title">Interactive Games</h1>
+    <p class="games-intro">Two quick games that reflect my work in NLP, ML, and clean logic — try your hand at a Wordle-style word game and an AI-style sentiment guesser.</p>
+
+    <!-- Game 1: Word Quest (Wordle-style) -->
+    <section class="section game-section">
+      <h2 class="section-title">Word Quest</h2>
+      <p class="game-desc">Guess the 5-letter tech word in 6 tries. Green = right letter, right spot. Yellow = letter in word, wrong spot. Gray = not in word.</p>
+      <div class="card game-card">
+        <div id="word-quest-board" class="word-board" aria-label="Word guessing grid"></div>
+        <div id="word-quest-message" class="game-message" aria-live="polite"></div>
+        <div id="word-quest-keyboard" class="game-keyboard" aria-label="Keyboard"></div>
+        <button type="button" class="game-btn" id="word-quest-new">New Game</button>
+      </div>
     </section>
 
-    <!-- skills cards -->
-    <section class="section">
-      <h2 class="section-title">Skills</h2>
-      <div class="card">
-        <h3>Languages</h3>
-        <p>C, Python, C++, Java, SQL, JavaScript, HTML, CSS</p>
-      </div>
-      <div class="card">
-        <h3>Algorithms &amp; ML</h3>
-        <p>Decision Trees, K-Nearest Neighbors, Random Forest, Naive Bayes, Support Vector Machines</p>
-      </div>
-      <div class="card">
-        <h3>Packages &amp; Tools</h3>
-        <p>Matplotlib, Plotly, NumPy, Pandas, Seaborn, TensorFlow, PyTorch</p>
-      </div>
-      <div class="card">
-        <h3>Databases</h3>
-        <p>MongoDB, MySQL, PostgreSQL, Neo4j</p>
+    <!-- Game 2: Sentiment Check -->
+    <section class="section game-section">
+      <h2 class="section-title">Sentiment Check</h2>
+      <p class="game-desc">Match the “AI” — choose whether each phrase is Positive, Neutral, or Negative. Inspired by sentiment analysis work in NLP.</p>
+      <div class="card game-card">
+        <div id="sentiment-phrase" class="sentiment-phrase"></div>
+        <div id="sentiment-choices" class="sentiment-choices">
+          <button type="button" class="sentiment-btn" data-sentiment="positive">Positive</button>
+          <button type="button" class="sentiment-btn" data-sentiment="neutral">Neutral</button>
+          <button type="button" class="sentiment-btn" data-sentiment="negative">Negative</button>
+        </div>
+        <div id="sentiment-feedback" class="game-message" aria-live="polite"></div>
+        <div id="sentiment-score" class="sentiment-score"></div>
+        <button type="button" class="game-btn" id="sentiment-restart" style="display:none;">Play Again</button>
       </div>
     </section>
   </main>
@@ -81,6 +76,7 @@
   <footer class="site-footer">
     <p>Rahul Kaura · <a href="contact.html">Contact Me</a></p>
   </footer>
+  <script src="games.js"></script>
   <script>
     (function () {
       var flyer = document.getElementById("rocket-flyer");
