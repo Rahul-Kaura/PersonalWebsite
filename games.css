@@ -1,4 +1,4 @@
-/* Games page: Word Quest + Sentiment Check */
+/* Games page: Word Quest + Password Vault */
 
 .games-intro {
   margin-bottom: var(--space-2xl, 2rem);
@@ -145,48 +145,52 @@
   box-shadow: 0 4px 16px rgba(167, 139, 250, 0.4);
 }
 
-/* Sentiment Check */
-.sentiment-phrase {
-  font-size: 1.25rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 1.25rem;
-  min-height: 3rem;
-  color: var(--color-text);
+/* Password Vault */
+.password-level {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
 }
 
-.sentiment-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: center;
+.password-prompt {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
   margin-bottom: 1rem;
 }
 
-.sentiment-btn {
-  padding: 0.6rem 1.25rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+.password-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.password-input {
+  flex: 1 1 10rem;
+  min-width: 10rem;
+  max-width: 18rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.95rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.1s;
 }
 
-.sentiment-btn:hover {
-  background: rgba(167, 139, 250, 0.15);
+.password-input:focus {
+  outline: none;
   border-color: var(--color-accent);
-  transform: scale(1.03);
+  box-shadow: 0 0 0 3px var(--color-accent-glow);
 }
 
-.sentiment-btn.correct { background: rgba(34, 197, 94, 0.2); border-color: #22c55e; color: #22c55e; }
-.sentiment-btn.wrong { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #ef4444; }
+.password-submit {
+  padding-inline: 1rem;
+}
 
-.sentiment-score {
-  margin-top: 0.75rem;
-  font-size: 0.9375rem;
+.password-stats {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
   color: var(--color-text-muted);
   text-align: center;
 }

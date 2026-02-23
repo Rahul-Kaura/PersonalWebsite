@@ -41,7 +41,7 @@
 
   <main>
     <h1 class="page-title">Interactive Games</h1>
-    <p class="games-intro">Two quick games that reflect my work in NLP, ML, and clean logic — try your hand at a Wordle-style word game and an AI-style sentiment guesser.</p>
+    <p class="games-intro">Two games that showcase logic, security, and puzzle‑style thinking — a Wordle-style word game and a cryptographic password guessing challenge.</p>
 
     <!-- Game 1: Word Quest (Wordle-style) -->
     <section class="section game-section">
@@ -55,20 +55,21 @@
       </div>
     </section>
 
-    <!-- Game 2: Sentiment Check -->
+    <!-- Game 2: Password Vault -->
     <section class="section game-section">
-      <h2 class="section-title">Sentiment Check</h2>
-      <p class="game-desc">Match the “AI” — choose whether each phrase is Positive, Neutral, or Negative. Inspired by sentiment analysis work in NLP.</p>
+      <h2 class="section-title">Password Vault</h2>
+      <p class="game-desc">Guess the secret password using cryptographic-style hints about length, overlap, and exact character positions.</p>
       <div class="card game-card">
-        <div id="sentiment-phrase" class="sentiment-phrase"></div>
-        <div id="sentiment-choices" class="sentiment-choices">
-          <button type="button" class="sentiment-btn" data-sentiment="positive">Positive</button>
-          <button type="button" class="sentiment-btn" data-sentiment="neutral">Neutral</button>
-          <button type="button" class="sentiment-btn" data-sentiment="negative">Negative</button>
+        <h3 id="password-level" class="password-level"></h3>
+        <p id="password-prompt" class="password-prompt"></p>
+        <div class="password-input-row">
+          <input type="text" id="password-input" class="password-input" placeholder="Type your guess..." autocomplete="off">
+          <button type="button" class="game-btn password-submit" id="password-submit">Submit Guess</button>
         </div>
-        <div id="sentiment-feedback" class="game-message" aria-live="polite"></div>
-        <div id="sentiment-score" class="sentiment-score"></div>
-        <button type="button" class="game-btn" id="sentiment-restart" style="display:none;">Play Again</button>
+        <div id="password-feedback" class="game-message" aria-live="polite"></div>
+        <div id="password-stats" class="password-stats"></div>
+        <button type="button" class="game-btn" id="password-next" style="display:none;">Next Level</button>
+        <button type="button" class="game-btn" id="password-restart" style="display:none;">Restart Game</button>
       </div>
     </section>
   </main>

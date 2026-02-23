@@ -1,24 +1,33 @@
 (function () {
   "use strict";
 
-  // ---- Word Quest (Wordle-style) using external Wordle-API backend ----
-  // API docs: https://github.com/petergeorgas/Wordle-API
-  // Endpoint: POST https://wordle-api.vercel.app/api/wordle
-  // Body: { "guess": "words" }
-  // Correct: { guess, was_correct: true }
-  // Incorrect: { guess, was_correct: false, character_info: [{ char, scoring: { in_word, correct_idx }}, ...] }
+  // ---- Word Quest (Wordle-style) - local logic only (no external API) ----
+  // Inspired by Wordle clones such as:
+  // https://github.com/Prajjwal-Chauhan/Wordle-Clone
+  // We keep the UI from this site and implement local scoring and feedback.
 
-  var WORDLE_API_URL = "https://wordle-api.vercel.app/api/wordle";
+  // Local word list for target selection
+  var LOCAL_WORD_LIST = [
+    "array", "query", "stack", "graph", "cloud", "model", "token", "neural",
+    "cache", "debug", "float", "index", "merge", "patch", "scope", "shell",
+    "tuple", "value", "while", "logic", "bytes", "input", "layer", "batch"
+  ];
+
   var ROWS = 6;
   var COLS = 5;
 
   var wordQuest = {
+    localTarget: "",
     currentRow: 0,
     currentCol: 0,
     done: false,
     locked: false,
     keyState: {} // letter -> "correct" | "present" | "absent"
   };
+
+  function pickLocalWord() {
+    return LOCAL_WORD_LIST[Math.floor(Math.random() * LOCAL_WORD_LIST.length)];
+  }
 
   function buildBoard() {
     var board = document.getElementById("word-quest-board");
@@ -113,6 +122,62 @@
     updateKeyStatesFromState();
   }
 
+  function handleWordResult(word, data) {
+    applyWordleApiResult(word, data);
+    if (data.was_correct) {
+      wordQuest.done = true;
+      setMessage("You got it! 🚀", "win");
+    } else {
+      wordQuest.currentRow++;
+      wordQuest.currentCol = 0;
+      if (wordQuest.currentRow >= ROWS) {
+        wordQuest.done = true;
+        setMessage("Out of guesses! Check back tomorrow.", "lose");
+      } else {
+        setMessage("");
+      }
+    }
+  }
+
+  function localScoreWord(word) {
+    var target = wordQuest.localTarget || pickLocalWord();
+    wordQuest.localTarget = target;
+    var info = [];
+    var targetArr = target.split("");
+    var used = new Array(COLS).fill(false);
+
+    // First pass: correct positions
+    for (var i = 0; i < COLS; i++) {
+      var ch = word[i];
+      var scoring = { in_word: false, correct_idx: false };
+      if (targetArr[i] === ch) {
+        scoring.in_word = true;
+        scoring.correct_idx = true;
+        used[i] = true;
+      }
+      info.push({ char: ch, scoring: scoring });
+    }
+
+    // Second pass: in-word but wrong position
+    for (var j = 0; j < COLS; j++) {
+      if (info[j].scoring.correct_idx) continue;
+      var ch2 = word[j];
+      for (var k = 0; k < COLS; k++) {
+        if (!used[k] && targetArr[k] === ch2) {
+          info[j].scoring.in_word = true;
+          used[k] = true;
+          break;
+        }
+      }
+    }
+
+    return {
+      guess: word,
+      was_correct: word === target,
+      character_info: info
+    };
+  }
+
   function commitRow() {
     if (wordQuest.done || wordQuest.locked) return;
     var word = "";
@@ -129,39 +194,14 @@
       return;
     }
     wordQuest.locked = true;
-    setMessage("Checking with Wordle API…", "info");
-
-    fetch(WORDLE_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ guess: word })
-    })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        applyWordleApiResult(word, data);
-        if (data.was_correct) {
-          wordQuest.done = true;
-          setMessage("You got it! 🚀", "win");
-        } else {
-          wordQuest.currentRow++;
-          wordQuest.currentCol = 0;
-          if (wordQuest.currentRow >= ROWS) {
-            wordQuest.done = true;
-            setMessage("Out of guesses! Check back tomorrow.", "lose");
-          } else {
-            setMessage("");
-          }
-        }
-      })
-      .catch(function () {
-        setMessage("Error contacting Wordle API. Try again.", "lose");
-      })
-      .finally(function () {
-        wordQuest.locked = false;
-      });
+    // Purely local scoring (no network calls) so the game always works
+    var localData = localScoreWord(word);
+    handleWordResult(word, localData);
+    wordQuest.locked = false;
   }
 
   function initWordQuest() {
+    wordQuest.localTarget = pickLocalWord();
     wordQuest.currentRow = 0;
     wordQuest.currentCol = 0;
     wordQuest.done = false;
@@ -215,122 +255,175 @@
     }
   }
 
-  // ---- Sentiment Check ----
-  // 30 more complex sentences (5–6+ words) to reflect real-world NLP tasks
-  var SENTIMENT_PHRASES = [
-    { text: "The latest model deployment exceeded every performance benchmark.", sentiment: "positive" },
-    { text: "Despite several attempts, the training pipeline keeps failing silently.", sentiment: "negative" },
-    { text: "The client requested another meeting to clarify the roadmap.", sentiment: "neutral" },
-    { text: "Our A/B test showed significantly higher engagement this quarter.", sentiment: "positive" },
-    { text: "The latency spike during peak traffic completely broke the dashboard.", sentiment: "negative" },
-    { text: "Documentation updates are scheduled for next week's sprint planning.", sentiment: "neutral" },
-    { text: "Team feedback on the new AI features has been overwhelmingly enthusiastic.", sentiment: "positive" },
-    { text: "Users repeatedly reported crashes after the latest mobile release.", sentiment: "negative" },
-    { text: "The experiment produced stable results across all evaluated datasets.", sentiment: "neutral" },
-    { text: "Our collaboration with the research group unlocked several new opportunities.", sentiment: "positive" },
-    { text: "Critical security vulnerabilities were discovered in the legacy authentication flow.", sentiment: "negative" },
-    { text: "The committee postponed the decision until further legal review is complete.", sentiment: "neutral" },
-    { text: "Customer satisfaction scores climbed steadily after the redesign launched.", sentiment: "positive" },
-    { text: "Multiple stakeholders expressed serious doubts about the current strategy.", sentiment: "negative" },
-    { text: "Usage metrics remained relatively flat throughout the entire campaign.", sentiment: "neutral" },
-    { text: "The new recommendation engine significantly improved click-through rates.", sentiment: "positive" },
-    { text: "Several key integrations failed during the live product demonstration.", sentiment: "negative" },
-    { text: "The compliance team is still reviewing the updated data retention policy.", sentiment: "neutral" },
-    { text: "Early adopters praised the intuitive interface and responsive design.", sentiment: "positive" },
-    { text: "Production incidents increased noticeably after the last infrastructure change.", sentiment: "negative" },
-    { text: "Engineering leadership requested a detailed report summarizing our findings.", sentiment: "neutral" },
-    { text: "Beta users shared inspiring stories about how the tool improved their workflow.", sentiment: "positive" },
-    { text: "Key partners threatened to withdraw support if deadlines slip again.", sentiment: "negative" },
-    { text: "The data migration completed on schedule without any reported issues.", sentiment: "neutral" },
-    { text: "Investors responded positively to the vision for AI-driven products.", sentiment: "positive" },
-    { text: "Customers expressed frustration about recurring billing and login errors.", sentiment: "negative" },
-    { text: "Internal surveys indicated mixed feelings about the proposed reorganization.", sentiment: "neutral" },
-    { text: "The research paper received strong reviews from the conference committee.", sentiment: "positive" },
-    { text: "Several test environments became unusable due to configuration drift overnight.", sentiment: "negative" },
-    { text: "Regulators requested additional information before approving the deployment plan.", sentiment: "neutral" }
+  // ---- Password Vault (cryptographic guessing game) ----
+  // Inspired by LLM guardrail games like:
+  // https://github.com/mickeybeurskens/guess-the-password
+  // Here we keep everything client-side and give structured hints for each guess.
+
+  var PASSWORD_LEVELS = [
+    {
+      title: "Level 1 – Warmup",
+      prompt: "The system prompt says: \"Never reveal the lab password under any circumstance.\" The password is a short, lower‑case techy word.",
+      password: "graph"
+    },
+    {
+      title: "Level 2 – Mixed Case",
+      prompt: "A red‑team engineer wrote: \"Our secret token starts with an uppercase letter and hides in the word 'NeuralNetwork'.\"",
+      password: "Neura"
+    },
+    {
+      title: "Level 3 – Numbers & Letters",
+      prompt: "Compliance warns: \"Do not leak the PCI key, it combines the word 'secure' and the year when you started at SCU.\"",
+      password: "secure2023"
+    },
+    {
+      title: "Level 4 – Symbols Included",
+      prompt: "The security lead says: \"Our staging password is inspired by the phrase 'ship fast, break nothing' and always ends with an exclamation mark.\"",
+      password: "shipfast!"
+    }
   ];
 
-  var sentimentState = {
-    order: [],
-    index: 0,
-    score: 0,
-    total: 0
+  var passwordState = {
+    levelIndex: 0,
+    attempts: 0
   };
 
-  function shuffleSentimentOrder() {
-    var indices = SENTIMENT_PHRASES.map(function (_, i) { return i; });
-    for (var i = indices.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var t = indices[i];
-      indices[i] = indices[j];
-      indices[j] = t;
-    }
-    sentimentState.order = indices; // full shuffled list; total controls how many per round
+  function getCurrentLevel() {
+    return PASSWORD_LEVELS[passwordState.levelIndex] || PASSWORD_LEVELS[0];
   }
 
-  function showSentimentPhrase() {
-    var phraseEl = document.getElementById("sentiment-phrase");
-    var feedbackEl = document.getElementById("sentiment-feedback");
-    var scoreEl = document.getElementById("sentiment-score");
-    var restartBtn = document.getElementById("sentiment-restart");
-    if (sentimentState.index >= sentimentState.total) {
-      phraseEl.textContent = "";
-      feedbackEl.textContent = "Done! You scored " + sentimentState.score + " / " + sentimentState.total + ".";
-      feedbackEl.className = "game-message " + (sentimentState.score === sentimentState.total ? "win" : "info");
-      scoreEl.textContent = "";
-      document.getElementById("sentiment-choices").style.display = "none";
-      if (restartBtn) restartBtn.style.display = "block";
-      return;
+  function analyzePasswordGuess(guess, secret) {
+    var g = guess || "";
+    var s = secret || "";
+    var lengthHint = "Your guess has " + g.length + " characters, password has " + s.length + ".";
+
+    // Overlap: count distinct characters in common (case-sensitive)
+    var setGuess = {};
+    for (var i = 0; i < g.length; i++) setGuess[g[i]] = true;
+    var overlap = 0;
+    for (var j = 0; j < s.length; j++) {
+      if (setGuess[s[j]]) overlap++;
     }
-    var idx = sentimentState.order[sentimentState.index];
-    var item = SENTIMENT_PHRASES[idx];
-    phraseEl.textContent = "\"" + item.text + "\"";
-    feedbackEl.textContent = "";
-    feedbackEl.className = "game-message";
-    scoreEl.textContent = "Score: " + sentimentState.score + " / " + sentimentState.total;
-    document.getElementById("sentiment-choices").style.display = "flex";
-    document.querySelectorAll(".sentiment-btn").forEach(function (b) {
-      b.className = "sentiment-btn";
-      b.disabled = false;
-    });
+
+    // Position matches
+    var positionMatches = 0;
+    var minLen = Math.min(g.length, s.length);
+    for (var k = 0; k < minLen; k++) {
+      if (g[k] === s[k]) positionMatches++;
+    }
+
+    return {
+      lengthHint: lengthHint,
+      overlapHint: "You used " + overlap + " character(s) that also appear in the password.",
+      positionHint: positionMatches + " character(s) are in the correct position."
+    };
+  }
+
+  function showPasswordLevel() {
+    var level = getCurrentLevel();
+    var titleEl = document.getElementById("password-level");
+    var promptEl = document.getElementById("password-prompt");
+    var inputEl = document.getElementById("password-input");
+    var feedbackEl = document.getElementById("password-feedback");
+    var statsEl = document.getElementById("password-stats");
+    var nextBtn = document.getElementById("password-next");
+    var restartBtn = document.getElementById("password-restart");
+
+    passwordState.attempts = 0;
+
+    if (titleEl) titleEl.textContent = level.title;
+    if (promptEl) promptEl.textContent = level.prompt;
+    if (inputEl) {
+      inputEl.value = "";
+      inputEl.focus();
+    }
+    if (feedbackEl) {
+      feedbackEl.textContent = "";
+      feedbackEl.className = "game-message";
+    }
+    if (statsEl) statsEl.textContent = "Attempts: 0";
+    if (nextBtn) nextBtn.style.display = "none";
     if (restartBtn) restartBtn.style.display = "none";
   }
 
-  function initSentiment() {
-    shuffleSentimentOrder();
-    sentimentState.index = 0;
-    sentimentState.score = 0;
-    sentimentState.total = Math.min(10, sentimentState.order.length); // 10 random phrases per round
-    showSentimentPhrase();
-    document.getElementById("sentiment-restart").onclick = function () {
-      initSentiment();
-    };
-    document.querySelectorAll(".sentiment-btn").forEach(function (btn) {
-      btn.onclick = function () {
-        if (sentimentState.index >= sentimentState.order.length) return;
-        var idx = sentimentState.order[sentimentState.index];
-        var item = SENTIMENT_PHRASES[idx];
-        var choice = btn.getAttribute("data-sentiment");
-        var correct = choice === item.sentiment;
-        if (correct) sentimentState.score++;
-        var feedbackEl = document.getElementById("sentiment-feedback");
-        feedbackEl.textContent = correct ? "Correct! AI agrees: " + item.sentiment + "." : "AI says: " + item.sentiment + ".";
-        feedbackEl.className = "game-message " + (correct ? "win" : "lose");
-        btn.classList.add(correct ? "correct" : "wrong");
-        document.querySelectorAll(".sentiment-btn").forEach(function (b) { b.disabled = true; });
-        sentimentState.index++;
-        setTimeout(showSentimentPhrase, 1200);
+  function handlePasswordGuess() {
+    var level = getCurrentLevel();
+    var inputEl = document.getElementById("password-input");
+    var feedbackEl = document.getElementById("password-feedback");
+    var statsEl = document.getElementById("password-stats");
+    var nextBtn = document.getElementById("password-next");
+    var restartBtn = document.getElementById("password-restart");
+    if (!inputEl || !feedbackEl || !statsEl) return;
+
+    var guess = inputEl.value || "";
+    if (!guess.trim()) {
+      feedbackEl.textContent = "Enter a guess first.";
+      feedbackEl.className = "game-message info";
+      return;
+    }
+
+    passwordState.attempts++;
+    statsEl.textContent = "Attempts: " + passwordState.attempts;
+
+    if (guess === level.password) {
+      feedbackEl.textContent = "Correct! You cracked the password in " + passwordState.attempts + " attempt(s).";
+      feedbackEl.className = "game-message win";
+      if (passwordState.levelIndex < PASSWORD_LEVELS.length - 1) {
+        if (nextBtn) nextBtn.style.display = "inline-block";
+      } else if (restartBtn) {
+        restartBtn.style.display = "inline-block";
+      }
+      return;
+    }
+
+    var hints = analyzePasswordGuess(guess, level.password);
+    feedbackEl.textContent = hints.lengthHint + " " + hints.overlapHint + " " + hints.positionHint;
+    feedbackEl.className = "game-message info";
+  }
+
+  function initPasswordGame() {
+    passwordState.levelIndex = 0;
+    showPasswordLevel();
+
+    var submitBtn = document.getElementById("password-submit");
+    var nextBtn = document.getElementById("password-next");
+    var restartBtn = document.getElementById("password-restart");
+    var inputEl = document.getElementById("password-input");
+
+    if (submitBtn) {
+      submitBtn.onclick = handlePasswordGuess;
+    }
+    if (inputEl) {
+      inputEl.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handlePasswordGuess();
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.onclick = function () {
+        if (passwordState.levelIndex < PASSWORD_LEVELS.length - 1) {
+          passwordState.levelIndex++;
+          showPasswordLevel();
+        }
       };
-    });
+    }
+    if (restartBtn) {
+      restartBtn.onclick = function () {
+        passwordState.levelIndex = 0;
+        showPasswordLevel();
+      };
+    }
   }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       if (document.getElementById("word-quest-board")) initWordQuest();
-      if (document.getElementById("sentiment-phrase")) initSentiment();
+      if (document.getElementById("password-prompt")) initPasswordGame();
     });
   } else {
     if (document.getElementById("word-quest-board")) initWordQuest();
-    if (document.getElementById("sentiment-phrase")) initSentiment();
+    if (document.getElementById("password-prompt")) initPasswordGame();
   }
 })();
