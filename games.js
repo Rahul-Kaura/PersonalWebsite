@@ -263,12 +263,9 @@
   }
 
   function wordQuestKeydown(e) {
-    var target = e.target;
-    var tag = target && target.tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA" || (target && target.isContentEditable)) {
-      return;
-    }
     if (!document.getElementById("word-quest-board") || !document.getElementById("word-quest-board").offsetParent) return;
+    var active = document.activeElement;
+    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) return;
     if (e.key === "Backspace" || e.key === "Enter" || (e.key.length === 1 && e.key >= "a" && e.key <= "z")) {
       e.preventDefault();
       typeLetter(e.key === "Backspace" ? "Backspace" : e.key === "Enter" ? "Enter" : e.key.toLowerCase());
@@ -376,7 +373,7 @@
     { cipher: "Lbh unir snxr rapbhagre nccyvpngvba.", plain: "you have fake encounter application.", hint: "Another ROT13 example.", type: "rot13" }
   ];
 
-  var cipherState = { order: [], index: 0, solved: 0, attempts: 0 };
+  var cipherState = { order: [], index: 0, solved: 0, attempts: 0, revealedWords: 0 };
 
   function currentCipher() {
     return cipherState.order[cipherState.index];
@@ -393,6 +390,7 @@
       cipherState.solved = 0;
       cipherState.attempts = 0;
     }
+    cipherState.revealedWords = 0;
     var challenge = currentCipher();
     var cipherEl = document.getElementById("cipher-ciphertext");
     var hintEl = document.getElementById("cipher-hint");
@@ -425,8 +423,16 @@
       cipherState.solved++;
       feedbackEl.textContent = "Nice work – you fully decrypted it!";
       feedbackEl.className = "game-message win";
+      cipherState.revealedWords = 0;
     } else {
-      feedbackEl.textContent = "Not quite. Compare patterns and punctuation, then try again.";
+      var words = challenge.plain.split(/\s+/);
+      if (cipherState.revealedWords < words.length) {
+        cipherState.revealedWords++;
+        var partial = words.slice(0, cipherState.revealedWords).join(" ");
+        feedbackEl.textContent = "Not quite. First " + cipherState.revealedWords + " word(s): \"" + partial + "\"";
+      } else {
+        feedbackEl.textContent = "Full answer: \"" + challenge.plain + "\" – compare and try again or go to the next challenge.";
+      }
       feedbackEl.className = "game-message lose";
     }
     scoreEl.textContent = "Solved: " + cipherState.solved + " · Attempts: " + cipherState.attempts;
