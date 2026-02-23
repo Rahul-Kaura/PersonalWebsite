@@ -55,21 +55,15 @@
       </div>
     </section>
 
-    <!-- Game 2: Password Vault -->
+    <!-- Game 2: Rocket Fuel Run (snake-style rocket game) -->
     <section class="section game-section">
-      <h2 class="section-title">Password Vault</h2>
-      <p class="game-desc">Guess the secret password using cryptographic-style hints about length, overlap, and exact character positions.</p>
+      <h2 class="section-title">Rocket Fuel Run</h2>
+      <p class="game-desc">Steer the rocket through space, collect fuel cells, and grow your flame trail. Don’t crash into the walls or your own trail.</p>
       <div class="card game-card">
-        <h3 id="password-level" class="password-level"></h3>
-        <p id="password-prompt" class="password-prompt"></p>
-        <div class="password-input-row">
-          <input type="text" id="password-input" class="password-input" placeholder="Type your guess..." autocomplete="off">
-          <button type="button" class="game-btn password-submit" id="password-submit">Submit Guess</button>
-        </div>
-        <div id="password-feedback" class="game-message" aria-live="polite"></div>
-        <div id="password-stats" class="password-stats"></div>
-        <button type="button" class="game-btn" id="password-next" style="display:none;">Next Level</button>
-        <button type="button" class="game-btn" id="password-restart" style="display:none;">Restart Game</button>
+        <div id="rocket-board" class="rocket-board" aria-label="Rocket snake game grid"></div>
+        <div id="rocket-message" class="game-message" aria-live="polite"></div>
+        <div id="rocket-score" class="rocket-score"></div>
+        <button type="button" class="game-btn" id="rocket-start">Start / Restart</button>
       </div>
     </section>
   </main>

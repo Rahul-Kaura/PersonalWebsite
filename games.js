@@ -6,12 +6,8 @@
   // https://github.com/Prajjwal-Chauhan/Wordle-Clone
   // We keep the UI from this site and implement local scoring and feedback.
 
-  // Local word list for target selection
-  var LOCAL_WORD_LIST = [
-    "array", "query", "stack", "graph", "cloud", "model", "token", "neural",
-    "cache", "debug", "float", "index", "merge", "patch", "scope", "shell",
-    "tuple", "value", "while", "logic", "bytes", "input", "layer", "batch"
-  ];
+  // Word list: loaded from wordle_words.txt (1500 5-letter words)
+  var LOCAL_WORD_LIST = [];
 
   var ROWS = 6;
   var COLS = 5;
@@ -25,7 +21,25 @@
     keyState: {} // letter -> "correct" | "present" | "absent"
   };
 
+  function loadWordList() {
+    if (LOCAL_WORD_LIST.length) return Promise.resolve();
+    return fetch("wordle_words.txt")
+      .then(function (res) { return res.text(); })
+      .then(function (text) {
+        var words = text.split(/\s+/).map(function (w) { return w.trim().toLowerCase(); })
+          .filter(function (w) { return w.length === 5; });
+        if (words.length) LOCAL_WORD_LIST = words;
+      })
+      .catch(function () {
+        // If loading fails we fall back to a small built-in list.
+        LOCAL_WORD_LIST = ["array", "query", "stack", "graph", "cloud", "model", "token", "neural"];
+      });
+  }
+
   function pickLocalWord() {
+    if (!LOCAL_WORD_LIST.length) {
+      LOCAL_WORD_LIST = ["array", "query", "stack", "graph", "cloud", "model", "token", "neural"];
+    }
     return LOCAL_WORD_LIST[Math.floor(Math.random() * LOCAL_WORD_LIST.length)];
   }
 
@@ -132,7 +146,8 @@
       wordQuest.currentCol = 0;
       if (wordQuest.currentRow >= ROWS) {
         wordQuest.done = true;
-        setMessage("Out of guesses! Check back tomorrow.", "lose");
+        var answer = wordQuest.localTarget || "";
+        setMessage("Out of guesses! The word was: " + answer.toUpperCase() + ". Click New Game to try another.", "lose");
       } else {
         setMessage("");
       }
@@ -382,48 +397,182 @@
   }
 
   function initPasswordGame() {
-    passwordState.levelIndex = 0;
-    showPasswordLevel();
+    // Deprecated hook (Password Vault replaced by Rocket Fuel Run).
+  }
 
-    var submitBtn = document.getElementById("password-submit");
-    var nextBtn = document.getElementById("password-next");
-    var restartBtn = document.getElementById("password-restart");
-    var inputEl = document.getElementById("password-input");
+  // ---- Rocket Fuel Run (snake-style rocket game) ----
+  var ROCKET_ROWS = 15;
+  var ROCKET_COLS = 15;
+  var ROCKET_TICK_MS = 150;
 
-    if (submitBtn) {
-      submitBtn.onclick = handlePasswordGuess;
+  var rocketState = {
+    segments: [], // [{x,y}, ...] head first
+    dirX: 1,
+    dirY: 0,
+    fuel: null,
+    running: false,
+    tickId: null,
+    score: 0
+  };
+
+  function buildRocketBoard() {
+    var board = document.getElementById("rocket-board");
+    if (!board) return;
+    board.innerHTML = "";
+    for (var r = 0; r < ROCKET_ROWS; r++) {
+      for (var c = 0; c < ROCKET_COLS; c++) {
+        var cell = document.createElement("div");
+        cell.className = "rocket-cell";
+        cell.setAttribute("data-r", r);
+        cell.setAttribute("data-c", c);
+        board.appendChild(cell);
+      }
     }
-    if (inputEl) {
-      inputEl.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          handlePasswordGuess();
-        }
+  }
+
+  function rocketCell(r, c) {
+    var board = document.getElementById("rocket-board");
+    if (!board) return null;
+    return board.querySelector("[data-r=\"" + r + "\"][data-c=\"" + c + "\"]");
+  }
+
+  function placeFuel() {
+    var empty = [];
+    for (var r = 0; r < ROCKET_ROWS; r++) {
+      for (var c = 0; c < ROCKET_COLS; c++) {
+        var occupied = rocketState.segments.some(function (seg) { return seg.x === c && seg.y === r; });
+        if (!occupied) empty.push({ x: c, y: r });
+      }
+    }
+    if (!empty.length) return;
+    var choice = empty[Math.floor(Math.random() * empty.length)];
+    rocketState.fuel = choice;
+  }
+
+  function renderRocket() {
+    for (var r = 0; r < ROCKET_ROWS; r++) {
+      for (var c = 0; c < ROCKET_COLS; c++) {
+        var cell = rocketCell(r, c);
+        if (!cell) continue;
+        cell.classList.remove("rocket-head", "rocket-body", "fuel");
+      }
+    }
+    rocketState.segments.forEach(function (seg, idx) {
+      var cell = rocketCell(seg.y, seg.x);
+      if (!cell) return;
+      if (idx === 0) cell.classList.add("rocket-head");
+      else cell.classList.add("rocket-body");
+    });
+    if (rocketState.fuel) {
+      var f = rocketState.fuel;
+      var fCell = rocketCell(f.y, f.x);
+      if (fCell) fCell.classList.add("fuel");
+    }
+    var scoreEl = document.getElementById("rocket-score");
+    if (scoreEl) scoreEl.textContent = "Fuel collected: " + rocketState.score;
+  }
+
+  function resetRocket() {
+    rocketState.segments = [{ x: 7, y: 7 }];
+    rocketState.dirX = 1;
+    rocketState.dirY = 0;
+    rocketState.score = 0;
+    rocketState.running = false;
+    if (rocketState.tickId) {
+      clearInterval(rocketState.tickId);
+      rocketState.tickId = null;
+    }
+    placeFuel();
+    renderRocket();
+    var msg = document.getElementById("rocket-message");
+    if (msg) msg.textContent = "Press Start and use arrow keys to move.";
+  }
+
+  function stepRocket() {
+    if (!rocketState.running) return;
+    var head = rocketState.segments[0];
+    var nx = head.x + rocketState.dirX;
+    var ny = head.y + rocketState.dirY;
+
+    // Wall collision
+    if (nx < 0 || nx >= ROCKET_COLS || ny < 0 || ny >= ROCKET_ROWS) {
+      rocketGameOver("You hit the wall!");
+      return;
+    }
+    // Self collision
+    if (rocketState.segments.some(function (seg) { return seg.x === nx && seg.y === ny; })) {
+      rocketGameOver("You hit your own flame trail!");
+      return;
+    }
+
+    rocketState.segments.unshift({ x: nx, y: ny });
+    if (rocketState.fuel && nx === rocketState.fuel.x && ny === rocketState.fuel.y) {
+      rocketState.score++;
+      placeFuel();
+    } else {
+      rocketState.segments.pop();
+    }
+    renderRocket();
+  }
+
+  function rocketGameOver(reason) {
+    rocketState.running = false;
+    if (rocketState.tickId) {
+      clearInterval(rocketState.tickId);
+      rocketState.tickId = null;
+    }
+    var msg = document.getElementById("rocket-message");
+    if (msg) msg.textContent = reason + " Press Start to try again.";
+  }
+
+  function initRocketGame() {
+    var board = document.getElementById("rocket-board");
+    if (!board) return;
+    buildRocketBoard();
+    resetRocket();
+
+    var startBtn = document.getElementById("rocket-start");
+    if (startBtn) {
+      startBtn.onclick = function () {
+        resetRocket();
+        rocketState.running = true;
+        rocketState.tickId = setInterval(stepRocket, ROCKET_TICK_MS);
+      };
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (!rocketState.running) return;
+      if (e.key === "ArrowUp" && rocketState.dirY !== 1) {
+        rocketState.dirX = 0; rocketState.dirY = -1;
+      } else if (e.key === "ArrowDown" && rocketState.dirY !== -1) {
+        rocketState.dirX = 0; rocketState.dirY = 1;
+      } else if (e.key === "ArrowLeft" && rocketState.dirX !== 1) {
+        rocketState.dirX = -1; rocketState.dirY = 0;
+      } else if (e.key === "ArrowRight" && rocketState.dirX !== -1) {
+        rocketState.dirX = 1; rocketState.dirY = 0;
+      } else {
+        return;
+      }
+      e.preventDefault();
+    });
+  }
+
+  function bootGames() {
+    var hasWordQuest = !!document.getElementById("word-quest-board");
+    var hasRocket = !!document.getElementById("rocket-board");
+    if (hasWordQuest) {
+      loadWordList().finally(function () {
+        initWordQuest();
       });
     }
-    if (nextBtn) {
-      nextBtn.onclick = function () {
-        if (passwordState.levelIndex < PASSWORD_LEVELS.length - 1) {
-          passwordState.levelIndex++;
-          showPasswordLevel();
-        }
-      };
-    }
-    if (restartBtn) {
-      restartBtn.onclick = function () {
-        passwordState.levelIndex = 0;
-        showPasswordLevel();
-      };
+    if (hasRocket) {
+      initRocketGame();
     }
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      if (document.getElementById("word-quest-board")) initWordQuest();
-      if (document.getElementById("password-prompt")) initPasswordGame();
-    });
+    document.addEventListener("DOMContentLoaded", bootGames);
   } else {
-    if (document.getElementById("word-quest-board")) initWordQuest();
-    if (document.getElementById("password-prompt")) initPasswordGame();
+    bootGames();
   }
 })();
