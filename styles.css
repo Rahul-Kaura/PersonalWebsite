@@ -567,6 +567,14 @@ p {
   color: var(--color-accent);
 }
 
+.hero-actions {
+  margin-top: var(--space-m);
+}
+
+.hero-actions .btn {
+  margin-top: var(--space-s);
+}
+
 /* --- Cards / sections --- */
 .section {
   margin-bottom: var(--space-2xl);
